@@ -158,14 +158,3 @@ This gives you evaluation metrics you can screenshot or mention in your Kaggle w
   - architecture diagram
   - features used (multi-agent, tools, memory, observability, evaluation, deployment).
 
----
-
-## 📽️ Video
-
-You can reuse the earlier 2-minute script, but add:
-
-- a slide for **multi-agent architecture**
-- a short screen recording hitting the `/query` endpoint
-- a quick glimpse of `logs/metrics.json` or the evaluator output
-
-This will align perfectly with the “YouTube Video Submission” bonus requirement.
