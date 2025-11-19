@@ -1,160 +1,261 @@
-# Employee Support & Knowledge Base Agent for Google (Enterprise Multi-Agent Version)
+# 🚀 Employee Support & Knowledge Base Agent (Enterprise Multi-Agent System)
 
-This repository contains the **enterprise, multi-agent version** of the Employee Support Agent
-you can submit for the **5-Day AI Agents Intensive Capstone**.
+An advanced **multi-agent employee support assistant** built for enterprise environments like **Google**, created as part of the **Google AI Agents Intensive – Capstone Project (Nov 10–14, 2025)**.
 
-It is designed to score highly on:
-
-- Category 1: Pitch (problem, solution, value)
-- Category 2: Implementation (architecture, code, AI integration)
-- Bonus: Gemini use, deployment, video
-
-## 🌟 Core Idea
-
-An **Employee Support & Knowledge Base Agent** for a large organization like Google:
-
-- Answers HR, IT, and general policy questions
-- Uses a **multi-agent system** (classifier, retriever, answer agent, escalation agent)
-- Retrieves internal policies via TF-IDF search
-- Tracks **sessions & memory** across conversations
-- Logs interactions and metrics for **observability**
-- Can be **deployed to Cloud Run** via the provided Dockerfile + FastAPI API
+This project demonstrates **all major concepts** from the course, including:
+✔ Multi-agent architecture
+✔ Tools (custom tools, API tools)
+✔ Parallel + Sequential Agents
+✔ Sessions & Memory
+✔ Long-term Memory Bank
+✔ Observability (logging, tracing, metrics)
+✔ Agent Evaluation
+✔ Deployment (Cloud Run, Docker)
+✔ Gemini-ready LLM integration
 
 ---
 
-## 🧱 Architecture Overview
+## 📌 Problem Statement
 
-Main implementation in:
+Large enterprises deal with thousands of repetitive HR, IT, and policy-related questions daily:
 
-- `src/employee_support_multiagent.py`
+* “How many paid leaves do I get?”
+* “How do I reset my password?”
+* “What is the work-from-home policy?”
+* “How do I report a laptop issue?”
 
-Key components:
-
-- **ClassificationAgent** – classifies query into HR / IT / GENERAL
-- **RetrievalAgent** – uses `DocumentSearchTool` (custom tool) over a KnowledgeBase with TF-IDF
-- **AnswerAgent** – LLM-powered agent that generates answers using `call_llm`
-- **EscalationAgent** – decides whether to open a ticket and uses `TicketingTool`
-- **SessionStore** – manages short-term chat history per session (session + state)
-- **MemoryBank** – long-term memory persisted in `memory/long_term_memory.jsonl`
-- **Observability** – logs interactions and metrics in `logs/`
-- **SimpleEvaluator** – reads logs and computes basic metrics
-
-The high-level orchestration is in:
-
-- `EmployeeSupportOrchestrator`
-
-Flow:
-
-1. User query enters `/query` endpoint (FastAPI, `api_fastapi.py`)
-2. Orchestrator:
-   - logs user turn in `SessionStore`
-   - runs **ClassificationAgent** (sequential)
-   - runs **RetrievalAgent** (category-specific or parallel across all categories)
-   - calls **AnswerAgent** (LLM) with conversation history + retrieved context
-   - calls **EscalationAgent** to decide on ticketing
-   - updates logs, metrics, and **MemoryBank**
+Employees wait, support teams repeat the same answers, and productivity drops.
 
 ---
 
-## ✅ Features Mapped to Competition Requirements
+## 🎯 Solution Overview
 
-**Multi-agent system**
-- Implemented via:
-  - `ClassificationAgent`
-  - `RetrievalAgent`
-  - `AnswerAgent`
-  - `EscalationAgent`
-  - `EmployeeSupportOrchestrator` orchestrates them sequentially.
+This project implements a **multi-agent employee support system** that:
 
-**Parallel & Sequential agents**
-- Sequential chain: classify → retrieve → answer → escalate (see `handle_query`).
-- Parallel behavior: `KnowledgeBase.search` uses `ThreadPoolExecutor` to query HR/IT/GENERAL indexes in parallel when category is GENERAL.
+### 🔹 Understands the user’s question (Classification Agent)
 
-**Tools**
-- Custom tools:
-  - `DocumentSearchTool` – wraps knowledge base retrieval
-  - `TicketingTool` – mock ServiceNow/Jira ticket creator
-- These are used by **RetrievalAgent** and **EscalationAgent**.
+Categorizes into **HR / IT / General** automatically.
 
-**Sessions & Memory**
-- `SessionStore` – in-memory session management (similar to InMemorySessionService).
-- `MemoryBank` – long-term memory, storing important Q&A events.
-- Context compaction – `SessionStore.get_history(max_turns=10)` simulates context compaction by trimming conversation history.
+### 🔹 Retrieves relevant company policies (Retrieval Agent)
 
-**Observability**
-- `Observability` class:
-  - writes `logs/interactions.jsonl`
-  - tracks metrics in `logs/metrics.json` (total queries, escalation count, average similarity).
+Uses **TF-IDF semantic search**, running **parallel retrieval across categories**.
 
-**Agent evaluation**
-- `SimpleEvaluator`:
-  - loads `interactions.jsonl`
-  - computes summary metrics like:
-    - total_interactions
-    - escalation_rate
-    - avg_similarity_score
+### 🔹 Generates accurate answers (LLM Answer Agent)
 
-**Deployment (Cloud Run / Cloud-based runtime)**
-- `api_fastapi.py` exposes `/query` endpoint.
-- `Dockerfile` builds a container around the FastAPI app.
-- `DEPLOYMENT.md` contains commands to deploy to Cloud Run.
-- This can be referenced in your write-up as “Cloud Run-ready deployment”.
+Uses a Gemini-ready wrapper function `call_llm()`.
 
-**Gemini usage**
-- `call_llm` is intentionally a placeholder.
-- In your environment, connect Gemini in this function to earn Gemini bonus points.
+### 🔹 Creates support tickets for unclear queries (Escalation Agent)
+
+Simulates ServiceNow/Jira via `TicketingTool`.
+
+### 🔹 Maintains session context (SessionStore)
+
+Stores conversation turns like InMemorySessionService.
+
+### 🔹 Saves long-term memory (MemoryBank)
+
+Writes important interactions to disk.
+
+### 🔹 Tracks logs, metrics & observability
+
+Generates:
+
+* `interactions.jsonl`
+* `metrics.json`
+* session logs
+* long-term memory logs
+
+### 🔹 Can be deployed as an API
+
+FastAPI + Dockerfile + Cloud Run deployment instructions included.
 
 ---
 
-## 🏃‍♂️ Running Locally
+## 🧠 Architecture Diagram (ASCII)
 
-1. Install dependencies:
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. Run the FastAPI app:
-
-   ```bash
-   uvicorn api_fastapi:app --host 0.0.0.0 --port 8080
-   ```
-
-3. Send a request:
-
-   ```bash
-   curl -X POST http://localhost:8080/query \
-        -H "Content-Type: application/json" \
-        -d '{
-          "session_id": "session-1",
-          "user_id": "user-123",
-          "query": "How many paid vacation days do I get per year?"
-        }'
-   ```
-
----
-
-## 🧪 Running the Evaluator
-
-After a few queries have been processed, run (inside a Python shell):
-
-```python
-from src.employee_support_multiagent import SimpleEvaluator
-ev = SimpleEvaluator()
-print(ev.evaluate())
+```
+User Query
+    │
+    ▼
+┌──────────────────────────┐
+│  EmployeeSupportOrchestrator
+└──────────────────────────┘
+    │
+    ▼
+┌──────────────┐
+│Classification│───► HR / IT / GENERAL
+└──────────────┘
+    │
+    ▼
+┌──────────────────────────┐
+│ RetrievalAgent + DocumentSearchTool
+│ (Parallel search across categories)
+└──────────────────────────┘
+    │
+    ▼
+┌──────────────────────────┐
+│       AnswerAgent        │ (LLM: Gemini/OpenAI)
+└──────────────────────────┘
+    │
+    ▼
+┌──────────────────────────┐
+│    EscalationAgent       │──► TicketingTool (ServiceNow-style)
+└──────────────────────────┘
+    │
+    ▼
+Logs, Metrics, MemoryBank, SessionStore
 ```
 
-This gives you evaluation metrics you can screenshot or mention in your Kaggle write-up.
+---
+
+## 🧩 Features (Mapped to Capstone Rubric)
+
+### ✔ Multi-Agent System
+
+* **ClassificationAgent**
+* **RetrievalAgent**
+* **AnswerAgent**
+* **EscalationAgent**
+* **EmployeeSupportOrchestrator**
+
+### ✔ Custom Tools
+
+* **DocumentSearchTool**
+* **TicketingTool (ServiceNow/Jira mock)**
+
+### ✔ Parallel & Sequential Agents
+
+* Sequential: classify → retrieve → answer → escalate
+* Parallel: retrieval across HR/IT/GENERAL docs using ThreadPoolExecutor
+
+### ✔ Sessions & Memory
+
+* **SessionStore:** short-term memory
+* **MemoryBank:** long-term memory JSONL
+* **Context compaction:** only last 10 turns kept
+
+### ✔ Observability
+
+* Logs all interactions
+* Tracks escalation rate, similarity score averages
+* Outputs metrics JSON file
+
+### ✔ Agent Evaluation
+
+`SimpleEvaluator` computes:
+
+* total interactions
+* escalation rate
+* avg similarity score
+
+### ✔ Deployment (Cloud Run)
+
+Included:
+
+* `api_fastapi.py` — REST API
+* `Dockerfile`
+* `DEPLOYMENT.md` — exact commands for Cloud Run
+
+### ✔ Gemini Integration (Bonus)
+
+Replace `call_llm()` with Gemini API call:
+
+```python
+import google.generativeai as genai
+
+genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+
+def call_llm(prompt: str):
+    model = genai.GenerativeModel("gemini-1.5-flash")
+    resp = model.generate_content(prompt)
+    return resp.text.strip()
+```
 
 ---
 
-## ✏️ Where to Customize for Your Submission
+## 📂 Project Structure
 
-- **LLM** – Implement Gemini in `call_llm` and mention it under “Effective Use of Gemini”.
-- **Docs** – Replace `data/*.md` with your real or richer mock policies.
-- **Write-up** – Use this repo plus your Kaggle notebook to explain:
-  - problem
-  - solution
-  - architecture diagram
-  - features used (multi-agent, tools, memory, observability, evaluation, deployment).
+```
+employee-support-agent-enterprise/
+│
+├── src/
+│   └── employee_support_multiagent.py   # Main multi-agent system
+│
+├── api_fastapi.py                       # Deployment API
+├── Dockerfile                           # Container deployment
+├── DEPLOYMENT.md                        # Cloud Run guide
+├── requirements.txt
+├── README.md
+│
+├── data/                                # Policy documents
+├── logs/                                # Interaction logs + metrics
+└── memory/                              # Long-term memory
+```
 
+---
+
+## 🔧 How to Run Locally
+
+### 1. Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 2. Run the FastAPI service
+
+```bash
+uvicorn api_fastapi:app --host 0.0.0.0 --port 8080
+```
+
+### 3. Test the agent
+
+```bash
+curl -X POST http://localhost:8080/query \
+  -H "Content-Type: application/json" \
+  -d '{
+    "session_id": "session-1",
+    "user_id": "user-123",
+    "query": "How many paid vacation days do I get per year?"
+  }'
+```
+
+---
+
+## 🛠 Integrating a Real LLM (Gemini)
+
+Inside `src/employee_support_multiagent.py`, modify:
+
+```python
+def call_llm(prompt: str) -> str:
+```
+
+Replace with any Gemini or GPT model.
+
+---
+
+## ☁️ Deployment (Cloud Run)
+
+Detailed instructions in `DEPLOYMENT.md`, summary:
+
+1. Build:
+
+```bash
+gcloud builds submit --tag gcr.io/PROJECT_ID/employee-agent
+```
+
+2. Deploy:
+
+```bash
+gcloud run deploy employee-agent \
+    --image gcr.io/PROJECT_ID/employee-agent \
+    --platform managed \
+    --region REGION \
+    --allow-unauthenticated
+```
+
+## 👤 Author
+
+**Banavath Prabhas (Prabhasholland)**
+Google AI Agents Intensive — Capstone Project
+Enterprise Track: Employee Support Agent
